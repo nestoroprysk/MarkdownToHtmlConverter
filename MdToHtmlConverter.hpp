@@ -17,6 +17,9 @@ private:
 		std::string getParagraph();
 		bool noMore() const;
 	private:
+		std::string reaplaceHeader(std::string) const;
+		size_t countHashes(std::string const&) const;
+		std::string createOpenHeaderTag(std::string const& line, const size_t len) const;
 		Reader& lines_;
 	};
 	Reader readLines(std::ifstream&);
