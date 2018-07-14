@@ -10,36 +10,21 @@ MdToHtmlConverter::MdToHtmlConverter(const char* fileName)
 void MdToHtmlConverter::convert()
 {
 	auto lines = readLines(ifile_);
-	auto linesWithMarkedHeaders = markHeaders(lines);
-	auto linesWithMarkedHeadersAndParagraps =
-		markParagraphs(linesWithMarkedHeaders);
-	writeResults(linesWithMarkedHeadersAndParagraps);
+	auto structuredLines = structureLines(lines);
+	writeResults(structuredLines);
 }
 
-MdToHtmlConverter::HeaderMarker::HeaderMarker(Reader& reader)
-	: lines_(reader) {}
+MdToHtmlConverter::LinesStructurer::LinesStructurer(Reader& lines)
+	: lines_(lines) {}
 
-std::string MdToHtmlConverter::HeaderMarker::getNextLine()
+std::string MdToHtmlConverter::LinesStructurer::getParagraph()
 {
 	return lines_.getNextLine() + " <header>";
 }
 
-bool MdToHtmlConverter::HeaderMarker::noMore() const
+bool MdToHtmlConverter::LinesStructurer::noMore() const
 {
 	return lines_.noMore();
-}
-
-MdToHtmlConverter::PragraphMarker::PragraphMarker(HeaderMarker& headerMarker)
-	: linesWithMarkedHeaders_(headerMarker) {}
-
-std::string MdToHtmlConverter::PragraphMarker::getNextLine()
-{
-	return linesWithMarkedHeaders_.getNextLine() + " <para>";
-}
-
-MdToHtmlConverter::PragraphMarker::operator bool() const
-{
-	return !linesWithMarkedHeaders_.noMore();
 }
 
 Reader MdToHtmlConverter::readLines(std::ifstream& ifile)
@@ -47,21 +32,16 @@ Reader MdToHtmlConverter::readLines(std::ifstream& ifile)
 	return Reader(ifile);
 }
 
-MdToHtmlConverter::HeaderMarker MdToHtmlConverter::markHeaders(Reader& lines)
+MdToHtmlConverter::LinesStructurer MdToHtmlConverter::structureLines(Reader& lines)
 {
-	return HeaderMarker(lines);
+	return LinesStructurer(lines);
 }
 
-MdToHtmlConverter::PragraphMarker MdToHtmlConverter::markParagraphs(HeaderMarker& linesWithMarkedHeaders)
-{
-	return PragraphMarker(linesWithMarkedHeaders);
-}
-
-void MdToHtmlConverter::writeResults(PragraphMarker& linesWithMarkedHeadersAndParagraps)
+void MdToHtmlConverter::writeResults(LinesStructurer& structuredLines)
 {
 	std::ofstream ofile("result.html");
-	while (linesWithMarkedHeadersAndParagraps)
-		ofile << linesWithMarkedHeadersAndParagraps.getNextLine() << std::endl;
+	while (!structuredLines.noMore())
+		ofile << structuredLines.getParagraph() << std::endl;
 }
 
 Reader::Reader(std::ifstream& ifile)

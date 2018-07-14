@@ -10,29 +10,18 @@ public:
 	MdToHtmlConverter(const char* fileName);
 	void convert();
 private:
-	class HeaderMarker
+	class LinesStructurer
 	{
 	public:
-		HeaderMarker(Reader&);
-		std::string getNextLine();
+		LinesStructurer(Reader&);
+		std::string getParagraph();
 		bool noMore() const;
 	private:
 		Reader& lines_;
 	};
-	// ...
-	class PragraphMarker
-	{
-	public:
-		PragraphMarker(HeaderMarker&);
-		std::string getNextLine();
-		explicit operator bool() const;
-	private:
-		HeaderMarker& linesWithMarkedHeaders_;
-	};
 	Reader readLines(std::ifstream&);
-	HeaderMarker markHeaders(Reader&);
-	PragraphMarker markParagraphs(HeaderMarker&);
-	void writeResults(PragraphMarker&);
+	LinesStructurer structureLines(Reader&);
+	void writeResults(LinesStructurer&);
 	std::ifstream ifile_;
 };
 
