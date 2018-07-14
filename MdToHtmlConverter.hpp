@@ -17,10 +17,11 @@ private:
 		std::string getParagraph();
 		bool noMore() const;
 	private:
-		std::string reaplaceHeader(std::string) const;
-		size_t countHashes(std::string const&) const;
-		std::string createOpenHeaderTag(std::string const& line, const size_t len) const;
-		std::string createCloseHeaderTag(const size_t len) const;
+		static std::string replaceHeader(std::string);
+		static std::string markSimpleParagraph(std::string);
+		static size_t countHashes(std::string const&);
+		static std::string createOpenHeaderTag(std::string const& line, const size_t len);
+		static std::string createCloseHeaderTag(const size_t len);
 		Reader& lines_;
 	};
 	Reader readLines(std::ifstream&);

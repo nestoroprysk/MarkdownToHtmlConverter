@@ -1,6 +1,7 @@
 #include "MdToHtmlConverter.hpp"
 #include <regex>
 #include <iostream>
+#include <functional>
 
 MdToHtmlConverter::MdToHtmlConverter(const char* fileName)
 	: ifile_(fileName)
@@ -21,9 +22,14 @@ MdToHtmlConverter::LinesStructurer::LinesStructurer(Reader& lines)
 
 std::string MdToHtmlConverter::LinesStructurer::getParagraph()
 {
-	std::string modifiedLine = lines_.getNextLine();
-	modifiedLine = reaplaceHeader(modifiedLine);
-	return modifiedLine;
+	std::string paragraph = lines_.getNextLine();
+	static const size_t nbParahraphTypes = 2;
+	static const std::regex paragraphTypes[] {std::regex("^#{1,6}[ ].*$"), std::regex(".*")};
+	static const std::function<std::string(std::string)> makeParagraph[] {replaceHeader, markSimpleParagraph};
+	for (size_t paragraphTypeIndex = 0; paragraphTypeIndex < nbParahraphTypes; ++paragraphTypeIndex)
+		if (std::regex_match(paragraph, paragraphTypes[paragraphTypeIndex]))
+			return makeParagraph[paragraphTypeIndex](paragraph);
+	return paragraph;
 }
 
 bool MdToHtmlConverter::LinesStructurer::noMore() const
@@ -31,29 +37,30 @@ bool MdToHtmlConverter::LinesStructurer::noMore() const
 	return lines_.noMore();
 }
 
-std::string MdToHtmlConverter::LinesStructurer::reaplaceHeader(std::string line) const
+std::string MdToHtmlConverter::LinesStructurer::replaceHeader(std::string line)
 {
-	static const std::regex header("^#{1,6}[ ].*$");
-	if (std::regex_match(line, header)){
-		const auto nbHashes = countHashes(line);
-		line.erase(0, nbHashes + 1);
-		line = createOpenHeaderTag(line, nbHashes) + line +
-			createCloseHeaderTag(nbHashes);
-	}
+	const auto nbHashes = countHashes(line);
+	line.erase(0, nbHashes + 1);
+	line = createOpenHeaderTag(line, nbHashes) + line + createCloseHeaderTag(nbHashes);
 	return line;
 }
 
-std::string MdToHtmlConverter::LinesStructurer::createOpenHeaderTag(std::string const& line, const size_t len) const
+std::string MdToHtmlConverter::LinesStructurer::markSimpleParagraph(std::string line)
+{
+	return "<p>" + line + "</p>";
+}
+
+std::string MdToHtmlConverter::LinesStructurer::createOpenHeaderTag(std::string const& line, const size_t len)
 {
 	return "<h" + std::to_string(len) + " id=\"" + line + "\">";
 }
 
-std::string MdToHtmlConverter::LinesStructurer::createCloseHeaderTag(const size_t len) const
+std::string MdToHtmlConverter::LinesStructurer::createCloseHeaderTag(const size_t len)
 {
 	return "</h" + std::to_string(len) + ">";
 }
 
-size_t MdToHtmlConverter::LinesStructurer::countHashes(std::string const& str) const
+size_t MdToHtmlConverter::LinesStructurer::countHashes(std::string const& str)
 {
 	for (size_t i = 0; i < str.size(); ++i)
 		if (str[i] != '#')
