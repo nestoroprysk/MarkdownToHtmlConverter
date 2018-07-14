@@ -1,5 +1,6 @@
 #include "MdToHtmlConverter.hpp"
 #include <regex>
+#include <iostream>
 
 MdToHtmlConverter::MdToHtmlConverter(const char* fileName)
 	: ifile_(fileName)
@@ -32,23 +33,25 @@ bool MdToHtmlConverter::LinesStructurer::noMore() const
 
 std::string MdToHtmlConverter::LinesStructurer::reaplaceHeader(std::string line) const
 {
-	static const std::regex header("^#{1,6}[ ]*.$");
+	static const std::regex header("^#{1,6}[ ].*$");
 	if (std::regex_match(line, header)){
 		const auto nbHashes = countHashes(line);
-		line = std::regex_replace(line, header, "", std::regex_constants::format_first_only);
-		const auto openTag = createOpenHeaderTag(line, nbHashes);
+		line.erase(0, nbHashes + 1);
+		line = createOpenHeaderTag(line, nbHashes) + line +
+			createCloseHeaderTag(nbHashes);
 	}
 	return line;
 }
 
 std::string MdToHtmlConverter::LinesStructurer::createOpenHeaderTag(std::string const& line, const size_t len) const
 {
-	std::string result("<h1 id=\"a\">");
-	result.replace(0, 1, std::to_string(len));
-	result.replace(8, 1, line);
-	return result;
+	return "<h" + std::to_string(len) + " id=\"" + line + "\">";
 }
 
+std::string MdToHtmlConverter::LinesStructurer::createCloseHeaderTag(const size_t len) const
+{
+	return "</h" + std::to_string(len) + ">";
+}
 
 size_t MdToHtmlConverter::LinesStructurer::countHashes(std::string const& str) const
 {
