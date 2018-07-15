@@ -1,5 +1,6 @@
 #include "MdToHtmlConverter.hpp"
 #include <regex>
+#include <functional>
 
 MdToHtmlConverter::MdToHtmlConverter(const char* fileName)
 	: ifile_(fileName)
@@ -12,7 +13,8 @@ void MdToHtmlConverter::convert()
 {
 	auto lines = readLines(ifile_);
 	auto paragraphs = makeParagraphs(lines);
-	writeResults(paragraphs);
+	auto taggedParagraphs = tagParagraphs(paragraphs);
+	writeResults(taggedParagraphs);
 }
 
 std::ofstream& operator<<(std::ofstream& o, MdToHtmlConverter::Paragraph const& p)
@@ -60,9 +62,9 @@ MdToHtmlConverter::ParagraphType MdToHtmlConverter::ParagraphMaker::defineParagr
 bool MdToHtmlConverter::ParagraphMaker::theSameParagraphType(std::string const& line, ParagraphType paragraphType)
 {
 	if (line.empty()) return false;
-	static const std::regex headerPattern("^[ ]*#{1,6}[ ].+");
-	static const std::regex unorderedListPattern("^[ ]*[*][ ].+");
-	static const std::regex orderedListPattern("^[ ]*[0-9]+[.][ ].+");
+	static const std::regex headerPattern("^#{1,6}[ ].+");
+	static const std::regex unorderedListPattern("^[*][ ].+");
+	static const std::regex orderedListPattern("^[0-9]+[.][ ].+");
 	static std::regex paragraphTypePatterns[] {headerPattern, unorderedListPattern, orderedListPattern};
 	if (paragraphType == simpleText){
 		for (size_t allegedParagraphType = 0; allegedParagraphType < nbCustomParagraphTypes_; ++allegedParagraphType)
@@ -71,6 +73,72 @@ bool MdToHtmlConverter::ParagraphMaker::theSameParagraphType(std::string const& 
 		return true;
 	}
 	return std::regex_match(line, paragraphTypePatterns[paragraphType]);
+}
+
+MdToHtmlConverter::ParagraphTagger::ParagraphTagger(ParagraphMaker& paragraphs)
+	: paragraphs_(paragraphs) {}
+
+MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::getTaggedParagraph()
+{
+	Paragraph paragraph = paragraphs_.getParagraph();
+	static const std::function<Paragraph(Paragraph)> tagParagraph[] =
+		{ tagHeader, tagUnorderedList, tagOrderedList, tagSimpleText };
+	return tagParagraph[static_cast<size_t>(paragraph.type)](paragraph);
+}
+
+bool MdToHtmlConverter::ParagraphTagger::noMore() const
+{
+	return paragraphs_.noMore();
+}
+
+MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagHeader(Paragraph paragraph)
+{
+	const auto nbHashes = countHashes(paragraph.lines[0]);
+	paragraph.lines[0].erase(0, nbHashes + 1);
+	paragraph.lines[0] =  createOpenHeaderTag(paragraph.lines[0], nbHashes) + paragraph.lines[0] +
+		createCloseHeaderTag(nbHashes);
+	return paragraph;
+}
+
+MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagUnorderedList(Paragraph paragraph)
+{
+	for (auto& word : paragraph.lines){
+		word.erase(0, 2);
+		word = "<li>" + word + "</li>";
+	}
+	paragraph.lines.insert(paragraph.lines.begin(), "<ul>");
+	paragraph.lines.push_back("</ul>");
+	return paragraph;
+}
+
+MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagOrderedList(Paragraph paragraph)
+{
+	return paragraph;
+}
+
+MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagSimpleText(Paragraph paragraph)
+{
+	paragraph.lines[0] =  "<p>" + paragraph.lines[0];
+	paragraph.lines[paragraph.lines.size() - 1] += "</p>";
+	return paragraph;
+}
+
+size_t MdToHtmlConverter::ParagraphTagger::countHashes(std::string const& str)
+{
+	for (size_t i = 0; i < str.size(); ++i)
+		if (str[i] != '#')
+			return i;
+	return std::string::npos;
+}
+
+std::string MdToHtmlConverter::ParagraphTagger::createOpenHeaderTag(std::string const& line, const size_t len)
+{
+	return "<h" + std::to_string(len) + " id=\"" + line + "\">";
+}
+
+std::string MdToHtmlConverter::ParagraphTagger::createCloseHeaderTag(const size_t len)
+{
+	return "</h" + std::to_string(len) + ">";
 }
 
 Reader MdToHtmlConverter::readLines(std::ifstream& ifile)
@@ -83,11 +151,16 @@ MdToHtmlConverter::ParagraphMaker MdToHtmlConverter::makeParagraphs(Reader& line
 	return ParagraphMaker(lines);
 }
 
-void MdToHtmlConverter::writeResults(ParagraphMaker& paragraphs)
+MdToHtmlConverter::ParagraphTagger MdToHtmlConverter::tagParagraphs(ParagraphMaker& paragraphs)
+{
+	return ParagraphTagger(paragraphs);
+}
+
+void MdToHtmlConverter::writeResults(ParagraphTagger& paragraphs)
 {
 	std::ofstream ofile("result.html");
 	while (!paragraphs.noMore())
-		ofile << paragraphs.getParagraph() << std::endl;
+		ofile << paragraphs.getTaggedParagraph() << std::endl;
 }
 
 Reader::Reader(std::ifstream& ifile)
@@ -106,41 +179,3 @@ bool Reader::noMore() const
 {
 	return eof_;
 }
-
-// bool beginningOfNextPara(std::string const& line)
-// {
-// 	if (line.empty()) return true;
-// 	static const std::regex header("^[ ]*#{1,6}[ ]");
-// 	static const std::regex header("^[ ]*#{1,6}[ ]");
-// }
-
-// std::string MdToHtmlConverter::ParagraphMaker::replaceHeader(std::string line)  // obsolete
-// {
-// 	const auto nbHashes = countHashes(line);
-// 	line.erase(0, nbHashes + 1);
-// 	line = createOpenHeaderTag(line, nbHashes) + line + createCloseHeaderTag(nbHashes);
-// 	return line;
-// }
-
-// std::string MdToHtmlConverter::ParagraphMaker::markSimpleParagraph(std::string line)
-// {
-// 	return "<p>" + line + "</p>";
-// }
-
-// size_t MdToHtmlConverter::ParagraphMaker::countHashes(std::string const& str)
-// {
-// 	for (size_t i = 0; i < str.size(); ++i)
-// 		if (str[i] != '#')
-// 			return i;
-// 	return std::string::npos;
-// }
-
-// std::string MdToHtmlConverter::ParagraphMaker::createOpenHeaderTag(std::string const& line, const size_t len)
-// {
-// 	return "<h" + std::to_string(len) + " id=\"" + line + "\">";
-// }
-
-// std::string MdToHtmlConverter::ParagraphMaker::createCloseHeaderTag(const size_t len)
-// {
-// 	return "</h" + std::to_string(len) + ">";
-// }
