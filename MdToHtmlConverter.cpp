@@ -101,23 +101,40 @@ MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagHeader(Parag
 
 MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagUnorderedList(Paragraph paragraph)
 {
-	for (auto& word : paragraph.lines){
-		word.erase(0, word.find("* ") + 2);
-		word = "<li>" + word + "</li>";
-	}
-	paragraph.lines.insert(paragraph.lines.begin(), "<ul>");
-	paragraph.lines.push_back("</ul>");
-	return paragraph;
+	return tagList(paragraph, "*", "<ul>", "</ul>");
 }
 
 MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagOrderedList(Paragraph paragraph)
 {
-	for (auto& word : paragraph.lines){
-		word.erase(0, word.find('.') + 1);
-		word = "<li>" + word + "</li>";
+	return tagList(paragraph, ".", "<ol>", "</ol>");
+}
+
+MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagList(Paragraph paragraph, std::string const& delimiter,
+	std::string const& openTag, std::string const& closeTag)
+{
+	size_t lastNbSpacesBeforeStar =  paragraph.lines[0].find(delimiter);
+	size_t nbNestedLists = 0;
+	for (size_t i = 0; i < paragraph.lines.size(); ++i){
+		size_t currentNbSpacesBeforeStar = paragraph.lines[i].find(delimiter);
+		if (currentNbSpacesBeforeStar > lastNbSpacesBeforeStar){
+			++nbNestedLists;
+			lastNbSpacesBeforeStar = currentNbSpacesBeforeStar;
+			paragraph.lines.insert(paragraph.lines.begin() + i, openTag);
+			++i;
+		}
+		else if (currentNbSpacesBeforeStar < lastNbSpacesBeforeStar){
+			--nbNestedLists;
+			lastNbSpacesBeforeStar = currentNbSpacesBeforeStar;
+			paragraph.lines.insert(paragraph.lines.begin() + i, closeTag);
+			++i;
+		}
+		paragraph.lines[i].erase(0, paragraph.lines[i].find(delimiter) + 2);
+		paragraph.lines[i] = "<li>" + paragraph.lines[i] + "</li>";
 	}
-	paragraph.lines.insert(paragraph.lines.begin(), "<ol>");
-	paragraph.lines.push_back("</ol>");
+	for (size_t i = 0; i < nbNestedLists; ++i)
+		paragraph.lines.insert(paragraph.lines.end(), closeTag);
+	paragraph.lines.insert(paragraph.lines.begin(), openTag);
+	paragraph.lines.push_back(closeTag);
 	return paragraph;
 }
 

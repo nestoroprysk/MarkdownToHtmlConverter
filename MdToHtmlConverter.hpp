@@ -41,6 +41,7 @@ private:
 		static Paragraph tagHeader(Paragraph);
 		static Paragraph tagUnorderedList(Paragraph);
 		static Paragraph tagOrderedList(Paragraph);
+		static Paragraph tagList(Paragraph, std::string const& delimiter, std::string const& openTag, std::string const& closeTag);
 		static Paragraph tagSimpleText(Paragraph);
 		static size_t countHashes(std::string const&);
 		static std::string createOpenHeaderTag(std::string const& line, const size_t len);
