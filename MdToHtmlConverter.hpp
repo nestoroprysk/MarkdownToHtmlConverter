@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fstream>
+#include <vector>
 
 class Reader;
 
@@ -10,23 +11,29 @@ public:
 	MdToHtmlConverter(const char* fileName);
 	void convert();
 private:
-	class LinesStructurer
+	enum ParagraphType { header, unorderedList, orderedList, simpleText };
+	struct Paragraph
+	{
+		ParagraphType type = simpleText;
+		std::vector<std::string> lines;
+	};
+	friend std::ofstream& operator<<(std::ofstream&, Paragraph const&);
+	class ParagraphMaker
 	{
 	public:
-		LinesStructurer(Reader&);
-		std::string getParagraph();
+		ParagraphMaker(Reader&);
+		Paragraph getParagraph();
 		bool noMore() const;
 	private:
-		static std::string replaceHeader(std::string);
-		static std::string markSimpleParagraph(std::string);
-		static size_t countHashes(std::string const&);
-		static std::string createOpenHeaderTag(std::string const& line, const size_t len);
-		static std::string createCloseHeaderTag(const size_t len);
+		static ParagraphType defineParagraphType(std::string const&);
+		static bool theSameParagraphType(std::string const&, ParagraphType);
+		static const size_t nbCustomParagraphTypes_ = 3;
 		Reader& lines_;
+		std::string lineFromLastReading_;
 	};
 	Reader readLines(std::ifstream&);
-	LinesStructurer structureLines(Reader&);
-	void writeResults(LinesStructurer&);
+	ParagraphMaker makeParagraphs(Reader&);
+	void writeResults(ParagraphMaker&);
 	std::ifstream ifile_;
 };
 
