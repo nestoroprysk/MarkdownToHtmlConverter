@@ -19,9 +19,8 @@ void MdToHtmlConverter::convert()
 
 std::ofstream& operator<<(std::ofstream& o, MdToHtmlConverter::Paragraph const& p)
 {
-	o << '{' << static_cast<int>(p.type) << '}';
 	for (auto const& line : p.lines)
-		o << line << '@';
+		o << line << std::endl;
 	return o;
 }
 
@@ -62,9 +61,9 @@ MdToHtmlConverter::ParagraphType MdToHtmlConverter::ParagraphMaker::defineParagr
 bool MdToHtmlConverter::ParagraphMaker::theSameParagraphType(std::string const& line, ParagraphType paragraphType)
 {
 	if (line.empty()) return false;
-	static const std::regex headerPattern("^#{1,6}[ ].+");
-	static const std::regex unorderedListPattern("^[*][ ].+");
-	static const std::regex orderedListPattern("^[0-9]+[.][ ].+");
+	static const std::regex headerPattern("^[ ]*#{1,6}[ ].+");
+	static const std::regex unorderedListPattern("^[ ]*[*][ ].+");
+	static const std::regex orderedListPattern("^[ ]*[0-9]+[.][ ].+");
 	static std::regex paragraphTypePatterns[] {headerPattern, unorderedListPattern, orderedListPattern};
 	if (paragraphType == simpleText){
 		for (size_t allegedParagraphType = 0; allegedParagraphType < nbCustomParagraphTypes_; ++allegedParagraphType)
@@ -103,7 +102,7 @@ MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagHeader(Parag
 MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagUnorderedList(Paragraph paragraph)
 {
 	for (auto& word : paragraph.lines){
-		word.erase(0, 2);
+		word.erase(0, word.find("* ") + 2);
 		word = "<li>" + word + "</li>";
 	}
 	paragraph.lines.insert(paragraph.lines.begin(), "<ul>");
@@ -113,6 +112,12 @@ MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagUnorderedLis
 
 MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagOrderedList(Paragraph paragraph)
 {
+	for (auto& word : paragraph.lines){
+		word.erase(0, word.find('.') + 1);
+		word = "<li>" + word + "</li>";
+	}
+	paragraph.lines.insert(paragraph.lines.begin(), "<ol>");
+	paragraph.lines.push_back("</ol>");
 	return paragraph;
 }
 
@@ -125,9 +130,12 @@ MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagSimpleText(P
 
 size_t MdToHtmlConverter::ParagraphTagger::countHashes(std::string const& str)
 {
-	for (size_t i = 0; i < str.size(); ++i)
+	size_t begin = 0;
+	while (std::isspace(str[begin]))
+		++begin;
+	for (size_t i = begin; i < str.size(); ++i)
 		if (str[i] != '#')
-			return i;
+			return i - begin;
 	return std::string::npos;
 }
 
@@ -160,7 +168,7 @@ void MdToHtmlConverter::writeResults(ParagraphTagger& paragraphs)
 {
 	std::ofstream ofile("result.html");
 	while (!paragraphs.noMore())
-		ofile << paragraphs.getTaggedParagraph() << std::endl;
+		ofile << paragraphs.getTaggedParagraph();
 }
 
 Reader::Reader(std::ifstream& ifile)

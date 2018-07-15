@@ -1,13 +1,14 @@
-The simple text begins a para
-# Header does the same job
-* First line of the list
+# A header
 
-Empty line
+A two-line paragraph.
+Yep :)
 
-EOF
+## Second Heading
 
-1. The first line of the ordered list
+* Urdered list
+* Of a few lines
+* And...
 
-Sweet :)
-Once more
-And the third time sweeeeet
+1. Ordered list
+1. Of a few lines
+1. Yep :)
