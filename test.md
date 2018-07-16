@@ -20,3 +20,19 @@ Ordered list of different levels:
   2. Three
  2. Two
 1. One
+
+And it supports **bold** as well.
+
+It is even capable of detecting **multi-
+line** bold text!
+
+And it supports *italics* as well.
+
+Even *multi-
+line* italics.
+
+Even ~~strikethrough~~.
+
+* And it is possible to **combine *all* that ~~stuff~~**
+
+The end :)

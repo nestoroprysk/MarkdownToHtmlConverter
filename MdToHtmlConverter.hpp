@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <vector>
+#include <regex>
 
 class Reader;
 
@@ -35,23 +36,38 @@ private:
 	{
 	public:
 		ParagraphTagger(ParagraphMaker&);
-		Paragraph getTaggedParagraph();
+		Paragraph getParagraph();
 		bool noMore() const;
 	private:
 		static Paragraph tagHeader(Paragraph);
 		static Paragraph tagUnorderedList(Paragraph);
 		static Paragraph tagOrderedList(Paragraph);
-		static Paragraph tagList(Paragraph, std::string const& delimiter, std::string const& openTag, std::string const& closeTag);
+		static Paragraph tagList(Paragraph, std::string const& delimiter,
+			std::string const& openTag, std::string const& closeTag);
 		static Paragraph tagSimpleText(Paragraph);
 		static size_t countHashes(std::string const&);
-		static std::string createOpenHeaderTag(std::string const& line, const size_t len);
+		static std::string createOpenHeaderTag(std::string const& line,
+			const size_t len);
 		static std::string createCloseHeaderTag(const size_t len);
 		ParagraphMaker& paragraphs_;
+	};
+	class ParagraphFormatter
+	{
+	public:
+		ParagraphFormatter(ParagraphTagger&);
+		Paragraph getParagraph();
+		bool noMore() const;
+	private:
+		static bool unformattedTextExists(Paragraph const&, std::regex const&);
+		static Paragraph makeFormatted(Paragraph, std::string const& openTag,
+			std::string const& closeTag, std::string const& formatSign);
+		ParagraphTagger& paragraphs_;
 	};
 	Reader readLines(std::ifstream&);
 	ParagraphMaker makeParagraphs(Reader&);
 	ParagraphTagger tagParagraphs(ParagraphMaker&);
-	void writeResults(ParagraphTagger&);
+	ParagraphFormatter formatParagraphs(ParagraphTagger&);
+	void writeResults(ParagraphFormatter&);
 	std::ifstream ifile_;
 };
 
