@@ -27,7 +27,7 @@ std::ofstream& operator<<(std::ofstream& o, MdToHtmlConverter::Paragraph const& 
 MdToHtmlConverter::ParagraphMaker::ParagraphMaker(Reader& lines)
 	: lines_(lines) {}
 
-MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphMaker::getParagraph()
+auto MdToHtmlConverter::ParagraphMaker::getParagraph() -> Paragraph
 {
 	Paragraph paragraph;
 	{
@@ -50,7 +50,7 @@ bool MdToHtmlConverter::ParagraphMaker::noMore() const
 	return lines_.noMore();
 }
 
-MdToHtmlConverter::ParagraphType MdToHtmlConverter::ParagraphMaker::defineParagraphType(std::string const& line)
+auto MdToHtmlConverter::ParagraphMaker::defineParagraphType(std::string const& line) -> ParagraphType
 {
 	for (size_t paragraphType = 0; paragraphType < nbCustomParagraphTypes_; ++paragraphType)
 		if (theSameParagraphType(line, static_cast<ParagraphType>(paragraphType)))
@@ -77,7 +77,7 @@ bool MdToHtmlConverter::ParagraphMaker::theSameParagraphType(std::string const& 
 MdToHtmlConverter::ParagraphTagger::ParagraphTagger(ParagraphMaker& paragraphs)
 	: paragraphs_(paragraphs) {}
 
-MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::getTaggedParagraph()
+auto MdToHtmlConverter::ParagraphTagger::getTaggedParagraph() -> Paragraph
 {
 	Paragraph paragraph = paragraphs_.getParagraph();
 	static const std::function<Paragraph(Paragraph)> tagParagraph[] =
@@ -90,7 +90,7 @@ bool MdToHtmlConverter::ParagraphTagger::noMore() const
 	return paragraphs_.noMore();
 }
 
-MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagHeader(Paragraph paragraph)
+auto MdToHtmlConverter::ParagraphTagger::tagHeader(Paragraph paragraph) -> Paragraph
 {
 	const auto nbHashes = countHashes(paragraph.lines[0]);
 	paragraph.lines[0].erase(0, nbHashes + 1);
@@ -99,18 +99,18 @@ MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagHeader(Parag
 	return paragraph;
 }
 
-MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagUnorderedList(Paragraph paragraph)
+auto MdToHtmlConverter::ParagraphTagger::tagUnorderedList(Paragraph paragraph) -> Paragraph
 {
 	return tagList(paragraph, "*", "<ul>", "</ul>");
 }
 
-MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagOrderedList(Paragraph paragraph)
+auto MdToHtmlConverter::ParagraphTagger::tagOrderedList(Paragraph paragraph) -> Paragraph
 {
 	return tagList(paragraph, ".", "<ol>", "</ol>");
 }
 
-MdToHtmlConverter::Paragraph MdToHtmlConverter::ParagraphTagger::tagList(Paragraph paragraph, std::string const& delimiter,
-	std::string const& openTag, std::string const& closeTag)
+auto MdToHtmlConverter::ParagraphTagger::tagList(Paragraph paragraph, std::string const& delimiter,
+	std::string const& openTag, std::string const& closeTag) -> Paragraph
 {
 	size_t lastNbSpacesBeforeStar =  paragraph.lines[0].find(delimiter);
 	size_t nbNestedLists = 0;
@@ -171,12 +171,12 @@ Reader MdToHtmlConverter::readLines(std::ifstream& ifile)
 	return Reader(ifile);
 }
 
-MdToHtmlConverter::ParagraphMaker MdToHtmlConverter::makeParagraphs(Reader& lines)
+auto MdToHtmlConverter::makeParagraphs(Reader& lines) -> ParagraphMaker
 {
 	return ParagraphMaker(lines);
 }
 
-MdToHtmlConverter::ParagraphTagger MdToHtmlConverter::tagParagraphs(ParagraphMaker& paragraphs)
+auto MdToHtmlConverter::tagParagraphs(ParagraphMaker& paragraphs) -> ParagraphTagger
 {
 	return ParagraphTagger(paragraphs);
 }
