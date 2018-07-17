@@ -4,8 +4,7 @@
 int main()
 {
 	try{
-		MdToHtmlConverter converter("test.md");
-		converter.convert();
+		MdToHtmlConverter::convert("sample.md");
 		std::cout << "Check your result.html file!" << std::endl;
 	}
 	catch (std::exception& e){

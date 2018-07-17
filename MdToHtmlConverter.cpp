@@ -1,16 +1,12 @@
 #include "MdToHtmlConverter.hpp"
 #include <functional>
 
-MdToHtmlConverter::MdToHtmlConverter(const char* fileName)
-	: ifile_(fileName)
+void MdToHtmlConverter::convert(const char* fileName)
 {
+	std::ifstream ifile_(fileName);
 	if (!ifile_)
 		throw std::ios_base::failure(
 			"Something went wrong while trying to open the file.");
-}
-
-void MdToHtmlConverter::convert()
-{
 	auto lines = readLines(ifile_);
 	auto paragraphs = makeParagraphs(lines);
 	auto taggedParagraphs = tagParagraphs(paragraphs);

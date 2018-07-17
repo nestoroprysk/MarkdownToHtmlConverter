@@ -9,8 +9,8 @@ class Reader;
 class MdToHtmlConverter
 {
 public:
-	MdToHtmlConverter(const char* fileName);
-	void convert();
+	static void convert(const char* fileName);
+	MdToHtmlConverter() = delete;
 private:
 	enum ParagraphType { header, unorderedList, orderedList, simpleText };
 	struct Paragraph
@@ -63,12 +63,11 @@ private:
 			std::string const& closeTag, std::string const& formatSign);
 		ParagraphTagger& paragraphs_;
 	};
-	Reader readLines(std::ifstream&);
-	ParagraphMaker makeParagraphs(Reader&);
-	ParagraphTagger tagParagraphs(ParagraphMaker&);
-	ParagraphFormatter formatParagraphs(ParagraphTagger&);
-	void writeResults(ParagraphFormatter&);
-	std::ifstream ifile_;
+	static Reader readLines(std::ifstream&);
+	static ParagraphMaker makeParagraphs(Reader&);
+	static ParagraphTagger tagParagraphs(ParagraphMaker&);
+	static ParagraphFormatter formatParagraphs(ParagraphTagger&);
+	static void writeResults(ParagraphFormatter&);
 };
 
 class Reader
